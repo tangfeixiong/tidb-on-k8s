@@ -1,0 +1,30 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: pd
+spec:
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        run: pd
+    spec:
+      containers:
+      - name: pd
+        image: pingcap/pd:latest
+        ports:
+        - containerPort: 1234
+        - containerPort: 6060
+        env:
+        - name: MY_POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        args: ["--addr=0.0.0.0:1234", "--advertise-addr=$(MY_POD_IP):1234", "--etcd=etcd-client:2379", "--pprof=:6060", "-L=info", "--cluster-id=1", "--max-peer-count=3"]
+        volumeMounts:
+          - name: timestamp
+            mountPath: /etc/localtime
+      volumes:
+      - name: timestamp
+        hostPath:
+          path: /etc/localtime
