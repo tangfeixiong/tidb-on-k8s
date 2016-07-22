@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: pd
 spec:
-  replicas: 3
+  replicas: 1
   template:
     metadata:
       labels:
@@ -15,12 +15,13 @@ spec:
         ports:
         - containerPort: 1234
         - containerPort: 6060
+        - containerPort: 9090
         env:
         - name: MY_POD_IP
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
-        args: ["--addr=0.0.0.0:1234", "--advertise-addr=$(MY_POD_IP):1234", "--etcd=etcd-client:2379", "--pprof=:6060", "-L=info", "--cluster-id=1", "--max-peer-count=3"]
+        args: ["--addr=0.0.0.0:1234", "--advertise-addr=$(MY_POD_IP):1234", "--etcd=etcd-client:2379", "--pprof=:6060", "-L=info", "--cluster-id=1", "--max-peer-count=3", "--min-capacity-used-ratio=0.1"]
         volumeMounts:
           - name: timestamp
             mountPath: /etc/localtime
@@ -28,3 +29,20 @@ spec:
       - name: timestamp
         hostPath:
           path: /etc/localtime
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: pd-overview
+  labels:
+    run: pd-overview
+spec:
+  type: NodePort
+  ports:
+  - name: mysql
+    port: 9090
+    targetPort: 9090
+  selector:
+    run: pd
