@@ -35,10 +35,6 @@ spec:
     port: 2380
     protocol: TCP
     targetPort: 2380
-  - name: etcd-server
-    port: 2379
-    protocol: TCP
-    targetPort: 2379
   selector:
     peer_no: pd-peer1
 
@@ -56,10 +52,6 @@ spec:
     port: 2380
     protocol: TCP
     targetPort: 2380
-  - name: etcd-server
-    port: 2379
-    protocol: TCP
-    targetPort: 2379
   selector:
     peer_no: pd-peer2
 
@@ -77,10 +69,6 @@ spec:
     port: 2380
     protocol: TCP
     targetPort: 2380
-  - name: etcd-server
-    port: 2379
-    protocol: TCP
-    targetPort: 2379
   selector:
     peer_no: pd-peer3
 
@@ -101,7 +89,8 @@ spec:
     - --name=pd3
     - --cluster-id=1
     - --host=pd3
-    - --initial-cluster="pd1=http://pd1:2380,pd2=http://pd2:2380,pd3=http://pd3:2380"
+    - --initial-cluster
+    - pd1=http://pd1:2380,pd2=http://pd2:2380,pd3=http://pd3:2380
     ports:
     - containerPort: 2379
       name: etcd-server
@@ -141,7 +130,8 @@ spec:
     - --name=pd1
     - --cluster-id=1
     - --host=pd1
-    - --initial-cluster="pd3=http://pd3:2380,pd1=http://pd1:2380,pd2=http://pd2:2380"
+    - --initial-cluster
+    - pd1=http://pd1:2380,pd2=http://pd2:2380,pd3=http://pd3:2380
     ports:
     - containerPort: 2379
       name: etcd-server
@@ -182,7 +172,8 @@ spec:
     - --name=pd2
     - --cluster-id=1
     - --host=pd2
-    - --initial-cluster="pd3=http://pd3:2380,pd1=http://pd1:2380,pd2=http://pd2:2380"
+    - --initial-cluster
+    - pd1=http://pd1:2380,pd2=http://pd2:2380,pd3=http://pd3:2380
     ports:
     - containerPort: 2379
       name: etcd-server
