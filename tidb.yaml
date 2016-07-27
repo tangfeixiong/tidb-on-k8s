@@ -7,14 +7,14 @@ spec:
   template:
     metadata:
       labels:
-        run: tidb
+        app: tidb-cluster
     spec:
       containers:
       - name: tidb
         image: pingcap/tidb:latest
         ports:
         - containerPort: 4000
-        args: ["-L=info", "--store=tikv", "--path=etcd-client:2379/pd?cluster=1", "-P=4000"]
+        args: ["-L=info", "--store=tikv", "--path=pd:2379/pd?cluster=1", "-P=4000"]
         volumeMounts:
         - name: timestamp
           mountPath: /etc/localtime
@@ -29,13 +29,11 @@ apiVersion: v1
 kind: Service
 metadata:
   name: tidb
-  labels:
-    run: tidb
 spec:
-  type: NodePort
   ports:
   - name: mysql
     port: 4000
     targetPort: 4000
+    nodePort: 34000
   selector:
-    run: tidb
+    app: tidb-cluster

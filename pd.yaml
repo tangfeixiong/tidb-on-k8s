@@ -1,48 +1,206 @@
-apiVersion: extensions/v1beta1
-kind: Deployment
+apiVersion: v1
+kind: Service
 metadata:
   name: pd
 spec:
-  replicas: 1
-  template:
-    metadata:
-      labels:
-        run: pd
-    spec:
-      containers:
-      - name: pd
-        image: pingcap/pd:latest
-        ports:
-        - containerPort: 1234
-        - containerPort: 6060
-        - containerPort: 9090
-        env:
-        - name: MY_POD_IP
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
-        args: ["--addr=0.0.0.0:1234", "--advertise-addr=$(MY_POD_IP):1234", "--etcd=etcd-client:2379", "--pprof=:6060", "-L=info", "--cluster-id=1", "--max-peer-count=3", "--min-capacity-used-ratio=0.1"]
-        volumeMounts:
-          - name: timestamp
-            mountPath: /etc/localtime
-      volumes:
-      - name: timestamp
-        hostPath:
-          path: /etc/localtime
+  type: NodePort
+  ports:
+  - name: etcd-server
+    port: 2379
+    protocol: TCP
+    targetPort: 2379
+  - name: pd-server
+    port: 1234
+    protocol: TCP
+    targetPort: 1234
+  - name: pd-info
+    port: 9090
+    protocol: TCP
+    targetPort: 9090
+    nodePort: 30080
+  selector:
+    app: pd-cluster
 
 ---
 
 apiVersion: v1
 kind: Service
 metadata:
-  name: pd-overview
   labels:
-    run: pd-overview
+    peer_no: pd-peer1
+  name: pd1
 spec:
-  type: NodePort
   ports:
-  - name: mysql
-    port: 9090
-    targetPort: 9090
+  - name: peer
+    port: 2380
+    protocol: TCP
+    targetPort: 2380
+  - name: etcd-server
+    port: 2379
+    protocol: TCP
+    targetPort: 2379
   selector:
-    run: pd
+    peer_no: pd-peer1
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    peer_no: pd-peer2
+  name: pd2
+spec:
+  ports:
+  - name: peer
+    port: 2380
+    protocol: TCP
+    targetPort: 2380
+  - name: etcd-server
+    port: 2379
+    protocol: TCP
+    targetPort: 2379
+  selector:
+    peer_no: pd-peer2
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    peer_no: pd-peer3
+  name: pd3
+spec:
+  ports:
+  - name: peer
+    port: 2380
+    protocol: TCP
+    targetPort: 2380
+  - name: etcd-server
+    port: 2379
+    protocol: TCP
+    targetPort: 2379
+  selector:
+    peer_no: pd-peer3
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: pd-cluster
+    peer_no: pd-peer3
+  name: pd-pod3
+spec:
+  containers:
+  - image: pingcap/pd:latest
+    name: pd-container3
+    args:
+    - --name=pd3
+    - --cluster-id=1
+    - --host=pd3
+    - --initial-cluster="pd1=http://pd1:2380,pd2=http://pd2:2380,pd3=http://pd3:2380"
+    ports:
+    - containerPort: 2379
+      name: etcd-server
+      protocol: TCP
+    - containerPort: 2380
+      name: peer
+      protocol: TCP
+    - containerPort: 9090
+      name: pd-info
+      protocol: TCP
+    - containerPort: 1234
+      name: pd-server
+      protocol: TCP
+    volumeMounts:
+    - name: timestamp
+      mountPath: /etc/localtime
+  volumes:
+  - name: timestamp
+    hostPath:
+      path: /etc/localtime
+  restartPolicy: OnFailure
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: pd-cluster
+    peer_no: pd-peer1
+  name: pd-pod1
+spec:
+  containers:
+  - image: pingcap/pd:latest
+    name: pd-container1
+    args:
+    - --name=pd1
+    - --cluster-id=1
+    - --host=pd1
+    - --initial-cluster="pd3=http://pd3:2380,pd1=http://pd1:2380,pd2=http://pd2:2380"
+    ports:
+    - containerPort: 2379
+      name: etcd-server
+      protocol: TCP
+    - containerPort: 2380
+      name: peer
+      protocol: TCP
+    - containerPort: 9090
+      name: pd-info
+      protocol: TCP
+    - containerPort: 1234
+      name: pd-server
+      protocol: TCP
+    volumeMounts:
+    - name: timestamp
+      mountPath: /etc/localtime
+  volumes:
+  - name: timestamp
+    hostPath:
+      path: /etc/localtime
+  restartPolicy: OnFailure
+
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: pd-cluster
+    peer_no: pd-peer2
+  name: pd-pod2
+spec:
+  containers:
+  - image: pingcap/pd:latest
+    name: pd-container2
+    args:
+    - --name=pd2
+    - --cluster-id=1
+    - --host=pd2
+    - --initial-cluster="pd3=http://pd3:2380,pd1=http://pd1:2380,pd2=http://pd2:2380"
+    ports:
+    - containerPort: 2379
+      name: etcd-server
+      protocol: TCP
+    - containerPort: 2380
+      name: peer
+      protocol: TCP
+    - containerPort: 9090
+      name: pd-info
+      protocol: TCP
+    - containerPort: 1234
+      name: pd-server
+      protocol: TCP
+    volumeMounts:
+    - name: timestamp
+      mountPath: /etc/localtime
+  volumes:
+  - name: timestamp
+    hostPath:
+      path: /etc/localtime
+  restartPolicy: OnFailure

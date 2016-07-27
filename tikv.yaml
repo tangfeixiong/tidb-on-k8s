@@ -19,7 +19,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
-        args: ["-S", "raftkv",  "--store=/data", "--addr=0.0.0.0:20160", "--advertise-addr=$(MY_POD_IP):20160", "--etcd=etcd-client:2379", "--cluster-id=1"]
+        args: ["-S", "raftkv",  "--store=/data", "--addr=0.0.0.0:20160", "--advertise-addr=$(MY_POD_IP):20160", "--etcd=pd:2379", "--cluster-id=1"]
         volumeMounts:
         - name: timestamp
           mountPath: /etc/localtime
